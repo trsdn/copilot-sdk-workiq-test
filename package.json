@@ -1,0 +1,29 @@
+{
+  "name": "copilot-sdk-workiq-test",
+  "version": "1.0.0",
+  "description": "Testing GitHub Copilot SDK with Work IQ",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "agent": "npx tsx src/agent.ts",
+    "news": "npx tsx src/news-app/server.ts"
+  },
+  "keywords": [
+    "copilot",
+    "sdk",
+    "workiq"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@github/copilot-sdk": "latest",
+    "express": "^4.22.1",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.7.0"
+  }
+}
