@@ -27,6 +27,8 @@
 - GitHub Copilot subscription
 - Microsoft 365 account (for Work IQ features)
 
+> 📖 **Learn more**: [Bringing work context to your code in GitHub Copilot](https://developer.microsoft.com/blog/bringing-work-context-to-your-code-in-github-copilot) - Microsoft Developer Blog
+
 ## 🚀 Installation
 
 ```bash
