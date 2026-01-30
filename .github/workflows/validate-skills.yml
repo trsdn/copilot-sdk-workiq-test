@@ -84,7 +84,7 @@ jobs:
           echo "✅ All skills validated successfully!"
 
       - name: Lint Markdown
-        uses: DavidAnson/markdownlint-cli2-action@v19
+        uses: DavidAnson/markdownlint-cli2-action@v22
         with:
           globs: |
             .claude/skills/**/*.md

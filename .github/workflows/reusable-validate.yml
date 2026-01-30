@@ -67,6 +67,6 @@ jobs:
 
       - name: Validate Markdown
         if: inputs.validate-markdown
-        uses: DavidAnson/markdownlint-cli2-action@v19
+        uses: DavidAnson/markdownlint-cli2-action@v22
         with:
           globs: "**/*.md"
