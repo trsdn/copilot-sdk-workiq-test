@@ -1,0 +1,93 @@
+name: Validate Skills
+
+on:
+  pull_request:
+    paths:
+      - '.claude/skills/**'
+      - '.github/skills/**'
+  push:
+    branches: [main]
+    paths:
+      - '.claude/skills/**'
+      - '.github/skills/**'
+
+jobs:
+  validate-skills:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate SKILL.md files
+        run: |
+          set -e
+          errors=0
+          
+          echo "🔍 Validating skills..."
+          
+          # Find all SKILL.md files
+          for skill_file in $(find .claude/skills .github/skills -name "SKILL.md" 2>/dev/null); do
+            dir_name=$(dirname "$skill_file" | xargs basename)
+            
+            echo "Checking $skill_file..."
+            
+            # Extract name from frontmatter
+            name=$(sed -n '/^---$/,/^---$/p' "$skill_file" | grep "^name:" | sed 's/name: *//' | tr -d '"' | tr -d "'")
+            
+            # Check if name exists
+            if [ -z "$name" ]; then
+              echo "❌ ERROR: $skill_file missing 'name' in frontmatter"
+              errors=$((errors + 1))
+              continue
+            fi
+            
+            # Check if name matches directory
+            if [ "$name" != "$dir_name" ]; then
+              echo "❌ ERROR: $skill_file name '$name' doesn't match directory '$dir_name'"
+              errors=$((errors + 1))
+            fi
+            
+            # Check name format (lowercase, hyphens, no consecutive hyphens)
+            if ! echo "$name" | grep -qE '^[a-z0-9]+(-[a-z0-9]+)*$'; then
+              echo "❌ ERROR: $skill_file name '$name' doesn't match pattern (lowercase, hyphens, no consecutive)"
+              errors=$((errors + 1))
+            fi
+            
+            # Check name length
+            if [ ${#name} -gt 64 ]; then
+              echo "❌ ERROR: $skill_file name '$name' exceeds 64 characters"
+              errors=$((errors + 1))
+            fi
+            
+            # Check for description
+            description=$(sed -n '/^---$/,/^---$/p' "$skill_file" | grep "^description:" | head -1)
+            if [ -z "$description" ]; then
+              echo "❌ ERROR: $skill_file missing 'description' in frontmatter"
+              errors=$((errors + 1))
+            fi
+            
+            # Check file size (warn if > 500 lines)
+            lines=$(wc -l < "$skill_file")
+            if [ "$lines" -gt 500 ]; then
+              echo "⚠️  WARNING: $skill_file has $lines lines (recommended < 500)"
+            fi
+            
+            echo "✓ $skill_file passed"
+          done
+          
+          if [ $errors -gt 0 ]; then
+            echo ""
+            echo "❌ Validation failed with $errors error(s)"
+            exit 1
+          fi
+          
+          echo ""
+          echo "✅ All skills validated successfully!"
+
+      - name: Lint Markdown
+        uses: DavidAnson/markdownlint-cli2-action@v19
+        with:
+          globs: |
+            .claude/skills/**/*.md
+            .github/skills/**/*.md
+          config: .markdownlint.json
+        continue-on-error: true

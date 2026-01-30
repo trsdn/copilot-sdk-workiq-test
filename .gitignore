@@ -27,7 +27,8 @@ ENV/
 
 # IDE and editors
 .idea/
-.vscode/
+.vscode/*
+!.vscode/mcp.json
 *.swp
 *.swo
 *~

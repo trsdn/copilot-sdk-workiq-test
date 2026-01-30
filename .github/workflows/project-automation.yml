@@ -1,0 +1,43 @@
+# Project Board Automation
+#
+# Automatically moves issues/PRs through project board columns.
+# Requires: GitHub Projects (new) with a Status field
+#
+# To use:
+# 1. Create a GitHub Project (Projects > New project)
+# 2. Add a "Status" field with options: Backlog, Ready, In Progress, Review, Done
+# 3. Get the project number from the URL (e.g., /projects/1 -> PROJECT_NUMBER=1)
+# 4. Set the PROJECT_URL secret in your repository settings
+#    - For organizations: https://github.com/orgs/YOUR_ORG/projects/1
+#    - For users: https://github.com/users/YOUR_USERNAME/projects/1
+#
+# NOTE: This workflow is disabled by default. To enable:
+# 1. Create your GitHub Project
+# 2. Add the PROJECT_URL secret with the full project URL
+
+name: Project Automation
+
+on:
+  issues:
+    types: [opened, closed, reopened, labeled]
+  pull_request:
+    types: [opened, closed, ready_for_review, converted_to_draft]
+
+jobs:
+  # Add new issues to project board
+  add-to-project:
+    name: Add to Project
+    runs-on: ubuntu-latest
+    # Only run if PROJECT_URL secret is configured
+    if: github.event.action == 'opened' && vars.PROJECT_URL != ''
+    steps:
+      - name: Add issue/PR to project
+        uses: actions/add-to-project@v1.0.2
+        with:
+          project-url: ${{ vars.PROJECT_URL }}
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+
+  # Advanced: Move issues based on status (requires additional setup)
+  # See: https://github.com/leonsteinhaeuser/project-beta-automations
+  # Uncomment and configure if you need automatic status updates
+  #         status_value: "Done"

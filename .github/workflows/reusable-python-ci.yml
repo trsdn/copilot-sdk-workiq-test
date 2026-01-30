@@ -1,0 +1,83 @@
+# Reusable Workflow: Python CI
+#
+# Usage in other repos:
+#   jobs:
+#     ci:
+#       uses: trsdn/torstens-repo-template/.github/workflows/reusable-python-ci.yml@main
+#       with:
+#         python-version: '3.12'
+
+name: Reusable Python CI
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        description: 'Python version to use'
+        required: false
+        type: string
+        default: '3.12'
+      working-directory:
+        description: 'Working directory for commands'
+        required: false
+        type: string
+        default: '.'
+      run-lint:
+        description: 'Run linting with ruff'
+        required: false
+        type: boolean
+        default: true
+      run-test:
+        description: 'Run tests with pytest'
+        required: false
+        type: boolean
+        default: true
+      install-command:
+        description: 'Custom install command'
+        required: false
+        type: string
+        default: 'pip install -e ".[dev]"'
+
+jobs:
+  ci:
+    name: Python CI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          ${{ inputs.install-command }}
+
+      - name: Run Ruff linter
+        if: inputs.run-lint
+        run: |
+          pip install ruff
+          ruff check .
+
+      - name: Run Ruff formatter check
+        if: inputs.run-lint
+        run: ruff format --check .
+        continue-on-error: true
+
+      - name: Run pytest
+        if: inputs.run-test
+        run: pytest --cov --cov-report=xml -v
+
+      - name: Upload coverage
+        if: inputs.run-test
+        uses: codecov/codecov-action@v4
+        with:
+          fail_ci_if_error: false

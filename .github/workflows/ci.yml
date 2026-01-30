@@ -1,0 +1,163 @@
+# CI Workflow - Runs on all pull requests and pushes to main
+#
+# Customize this workflow for your project's tech stack.
+# Uncomment the relevant sections for your language/framework.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ============================================
+  # Lint and Format Check
+  # ============================================
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Markdown linting (always enabled)
+      - name: Lint Markdown
+        uses: DavidAnson/markdownlint-cli2-action@v19
+        with:
+          globs: "**/*.md"
+
+      # --- Node.js (uncomment if using) ---
+      # - name: Setup Node.js
+      #   uses: actions/setup-node@v4
+      #   with:
+      #     node-version: '20'
+      #     cache: 'npm'
+      #
+      # - name: Install dependencies
+      #   run: npm ci
+      #
+      # - name: Run ESLint
+      #   run: npm run lint --if-present
+      #
+      # - name: Check Prettier formatting
+      #   run: npx prettier --check "**/*.{js,ts,jsx,tsx,json,md,yml,yaml}"
+
+      # --- Python (uncomment if using) ---
+      # - name: Setup Python
+      #   uses: actions/setup-python@v5
+      #   with:
+      #     python-version: '3.12'
+      #
+      # - name: Install dependencies
+      #   run: pip install ruff
+      #
+      # - name: Run Ruff linter
+      #   run: ruff check .
+      #
+      # - name: Run Ruff formatter check
+      #   run: ruff format --check .
+
+      # --- Go (uncomment if using) ---
+      # - name: Setup Go
+      #   uses: actions/setup-go@v5
+      #   with:
+      #     go-version: '1.22'
+      #
+      # - name: Run golangci-lint
+      #   uses: golangci/golangci-lint-action@v6
+
+  # ============================================
+  # Tests
+  # ============================================
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      # --- Node.js (uncomment if using) ---
+      # - name: Setup Node.js
+      #   uses: actions/setup-node@v4
+      #   with:
+      #     node-version: '20'
+      #     cache: 'npm'
+      #
+      # - name: Install dependencies
+      #   run: npm ci
+      #
+      # - name: Run tests
+      #   run: npm test
+      #
+      # - name: Upload coverage
+      #   uses: codecov/codecov-action@v4
+      #   if: always()
+
+      # --- Python (uncomment if using) ---
+      # - name: Setup Python
+      #   uses: actions/setup-python@v5
+      #   with:
+      #     python-version: '3.12'
+      #
+      # - name: Install dependencies
+      #   run: |
+      #     pip install -e ".[dev]"
+      #     # or: pip install -r requirements-dev.txt
+      #
+      # - name: Run pytest
+      #   run: pytest --cov --cov-report=xml
+      #
+      # - name: Upload coverage
+      #   uses: codecov/codecov-action@v4
+      #   if: always()
+
+      # --- Go (uncomment if using) ---
+      # - name: Setup Go
+      #   uses: actions/setup-go@v5
+      #   with:
+      #     go-version: '1.22'
+      #
+      # - name: Run tests
+      #   run: go test -v -race -coverprofile=coverage.out ./...
+      #
+      # - name: Upload coverage
+      #   uses: codecov/codecov-action@v4
+      #   if: always()
+
+      # Placeholder - remove when you add real tests
+      - name: No tests configured
+        run: echo "Configure tests for your project in .github/workflows/ci.yml"
+
+  # ============================================
+  # Build (optional)
+  # ============================================
+  # build:
+  #   name: Build
+  #   runs-on: ubuntu-latest
+  #   needs: test
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #
+  #     # --- Node.js ---
+  #     # - name: Setup Node.js
+  #     #   uses: actions/setup-node@v4
+  #     #   with:
+  #     #     node-version: '20'
+  #     #     cache: 'npm'
+  #     #
+  #     # - name: Install dependencies
+  #     #   run: npm ci
+  #     #
+  #     # - name: Build
+  #     #   run: npm run build
+  #     #
+  #     # - name: Upload build artifacts
+  #     #   uses: actions/upload-artifact@v4
+  #     #   with:
+  #     #     name: build
+  #     #     path: dist/

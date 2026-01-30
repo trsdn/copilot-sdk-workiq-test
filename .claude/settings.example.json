@@ -1,0 +1,61 @@
+{
+  "$schema": "https://code.claude.com/settings-schema.json",
+  "_comment": "Example settings.json - Copy to .claude/settings.json and customize",
+
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(git commit:*)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Read(~/.zshrc)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git checkout:*)"
+    ],
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Bash(curl:*)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Read(./**/credentials*)"
+    ]
+  },
+
+  "env": {
+    "NODE_ENV": "development"
+  },
+
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'File modified'",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"Branch: $(git branch --show-current 2>/dev/null || echo 'not a git repo')\""
+          }
+        ]
+      }
+    ]
+  },
+
+  "model": "claude-sonnet-4-20250514",
+  "respectGitignore": true,
+  "showTurnDuration": true
+}

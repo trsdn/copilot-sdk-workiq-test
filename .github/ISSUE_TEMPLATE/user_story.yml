@@ -1,0 +1,110 @@
+name: "📋 User Story"
+description: "Describe a feature from the user's perspective with acceptance criteria"
+title: "[Story] "
+labels: ["user-story", "needs-refinement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## User Story Template
+        Use this template to capture requirements in a structured, testable format.
+
+  - type: textarea
+    id: user-story
+    attributes:
+      label: User Story
+      description: "As a [type of user], I want [goal] so that [benefit]"
+      placeholder: |
+        As a **[user role]**,
+        I want **[capability/feature]**,
+        So that **[benefit/value]**.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: "Testable conditions that must be true for the story to be complete"
+      placeholder: |
+        - [ ] **Given** [precondition], **when** [action], **then** [expected result]
+        - [ ] **Given** [precondition], **when** [action], **then** [expected result]
+        - [ ] **Given** [precondition], **when** [action], **then** [expected result]
+      value: |
+        - [ ] **Given** , **when** , **then** 
+        - [ ] **Given** , **when** , **then** 
+        - [ ] **Given** , **when** , **then** 
+    validations:
+      required: true
+
+  - type: textarea
+    id: technical-notes
+    attributes:
+      label: Technical Notes
+      description: "Implementation hints, constraints, or architectural considerations"
+      placeholder: |
+        - API endpoint needed: ...
+        - Database changes: ...
+        - Dependencies: ...
+    validations:
+      required: false
+
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of Scope
+      description: "Explicitly state what is NOT included in this story"
+      placeholder: |
+        - Not handling edge case X
+        - Mobile support in separate story
+    validations:
+      required: false
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: "MoSCoW prioritization"
+      options:
+        - Must Have
+        - Should Have
+        - Could Have
+        - Won't Have (this release)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: size
+    attributes:
+      label: Estimated Size
+      description: "T-shirt sizing for effort"
+      options:
+        - XS (< 2 hours)
+        - S (2-4 hours)
+        - M (1-2 days)
+        - L (3-5 days)
+        - XL (> 1 week - consider splitting)
+    validations:
+      required: false
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: "Other issues or external dependencies"
+      placeholder: |
+        - Blocked by #123
+        - Requires API from external team
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: definition-of-ready
+    attributes:
+      label: Definition of Ready
+      description: "Confirm this story is ready for development"
+      options:
+        - label: Acceptance criteria are testable (Given/When/Then format)
+        - label: Story is small enough (can be completed in one sprint)
+        - label: Dependencies are identified
+        - label: Technical approach is understood

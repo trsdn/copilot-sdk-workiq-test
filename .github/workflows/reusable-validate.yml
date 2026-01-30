@@ -1,0 +1,72 @@
+# Reusable Workflow: Validate Repository Structure
+#
+# Validates skills, agents, prompts, and markdown files.
+#
+# Usage in other repos:
+#   jobs:
+#     validate:
+#       uses: trsdn/torstens-repo-template/.github/workflows/reusable-validate.yml@main
+
+name: Reusable Validate
+
+on:
+  workflow_call:
+    inputs:
+      validate-skills:
+        description: 'Validate skill files'
+        required: false
+        type: boolean
+        default: true
+      validate-markdown:
+        description: 'Validate markdown files'
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  validate:
+    name: Validate Structure
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate Skills
+        if: inputs.validate-skills
+        run: |
+          echo "Validating skills..."
+          errors=0
+
+          # Check Claude skills
+          if [ -d .claude/skills ]; then
+            for skill in .claude/skills/*/; do
+              if [ -d "$skill" ] && [ ! -f "${skill}SKILL.md" ]; then
+                echo "❌ Missing SKILL.md in $skill"
+                errors=$((errors + 1))
+              fi
+            done
+          fi
+
+          # Check GitHub Copilot skills
+          if [ -d .github/skills ]; then
+            for skill in .github/skills/*/; do
+              if [ -d "$skill" ] && [ ! -f "${skill}SKILL.md" ]; then
+                echo "❌ Missing SKILL.md in $skill"
+                errors=$((errors + 1))
+              fi
+            done
+          fi
+
+          if [ $errors -gt 0 ]; then
+            echo "Found $errors skill validation errors"
+            exit 1
+          fi
+
+          echo "✅ All skills validated"
+
+      - name: Validate Markdown
+        if: inputs.validate-markdown
+        uses: DavidAnson/markdownlint-cli2-action@v19
+        with:
+          globs: "**/*.md"

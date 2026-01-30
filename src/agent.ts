@@ -5,22 +5,22 @@ import * as readline from "readline";
 // Define custom tools for your agent
 const getSecretNumberTool = defineTool("get_secret_number", {
     description: "Gets a secret number based on a key",
-    parameters: z.object({
-        key: z.string().describe("The key to look up"),
-    }),
-    handler: ({ key }) => {
+    parameters: {
+        key: { type: "string", description: "The key to look up" },
+    },
+    handler: (args: { key: string }) => {
         const secrets: Record<string, number> = {
             ALPHA: 54321,
             BETA: 12345,
             GAMMA: 99999,
         };
-        return secrets[key.toUpperCase()] ?? 0;
+        return secrets[args.key.toUpperCase()] ?? 0;
     },
 });
 
 const getCurrentTimeTool = defineTool("get_current_time", {
     description: "Gets the current date and time",
-    parameters: z.object({}),
+    parameters: {},
     handler: () => {
         return new Date().toISOString();
     },

@@ -93,8 +93,25 @@
         .news-source {
             display: inline-block; padding: 3px 8px; background: #3a7bd5;
             border-radius: 15px; font-size: 0.7rem; font-weight: 600;
-            text-transform: uppercase; margin-bottom: 8px;
+            text-transform: uppercase; margin-bottom: 8px; margin-right: 5px;
         }
+        .source-badges { margin-bottom: 10px; }
+        .news-card.merged { border-left: 4px solid #9c27b0; }
+        .news-card.merged .news-source { background: #9c27b0; }
+        .merged-badge {
+            display: inline-block; padding: 2px 6px; background: #9c27b0; color: #fff;
+            border-radius: 4px; font-size: 0.65rem; font-weight: 600; margin-left: 8px;
+            vertical-align: middle;
+        }
+        .news-links {
+            margin-top: 12px; padding-top: 10px; border-top: 1px solid #333;
+            font-size: 0.8rem;
+        }
+        .news-links a {
+            color: #00d2ff; text-decoration: none; margin-right: 10px;
+        }
+        .news-links a:hover { text-decoration: underline; }
+        .news-card.duplicate { border-left: 4px solid #ff9800; opacity: 0.7; }
         .news-card.duplicate .news-source { background: #ff9800; }
         .news-title { font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 8px; line-height: 1.4; }
         .news-title a { color: #fff; text-decoration: none; }
@@ -130,9 +147,10 @@
         <div class="controls">
             <button class="btn-primary" id="fetchNews" onclick="fetchNewsStream()">🔄 Fetch News</button>
             <div class="filter-input">
-                <label>Last</label>
-                <select id="daysFilter">
+                <label for="daysFilter">Last</label>
+                <select id="daysFilter" title="Select number of days to fetch">
                     <option value="1">1 day</option>
+                    <option value="2">2 days</option>
                     <option value="3" selected>3 days</option>
                     <option value="7">7 days</option>
                     <option value="14">14 days</option>
@@ -140,8 +158,8 @@
                 </select>
             </div>
             <div class="filter-input">
-                <label>Max</label>
-                <input type="number" id="maxNews" value="30" min="5" max="100">
+                <label for="maxNews">Max</label>
+                <input type="number" id="maxNews" value="30" min="5" max="100" title="Maximum number of news items" aria-label="Maximum news items">
                 <label>items</label>
             </div>
             <div class="filter-toggle">
@@ -241,7 +259,15 @@
         function formatDate(dateStr) {
             if (!dateStr) return 'Unknown date';
             try {
+                // Handle YYYY-MM-DD format (parse as local date, not UTC)
+                if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+                    const [year, month, day] = dateStr.split('-').map(Number);
+                    const d = new Date(year, month - 1, day);
+                    return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                }
+                // Handle ISO datetime or other formats
                 const d = new Date(dateStr);
+                if (isNaN(d.getTime())) return dateStr;
                 return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
             } catch { return dateStr; }
         }
@@ -251,46 +277,48 @@
             const duplicateGroupsDiv = document.getElementById('duplicateGroups');
             const newsGrid = document.getElementById('newsGrid');
             const news = data.news || [];
-            const duplicateGroups = data.duplicateGroups || [];
-            const totalNews = news.length;
-            const duplicateCount = news.filter(n => n.isDuplicate).length;
-            const uniqueCount = totalNews - duplicateCount;
-            const sources = [...new Set(news.map(n => n.source || n.sender))].length;
+            const stats = data.stats || {};
+            
+            // Count merged items (those with multiple sources)
+            const mergedCount = news.filter(n => n.sources && n.sources.length > 1).length;
+            const totalSources = news.reduce((sum, n) => sum + (n.sources?.length || 1), 0);
+            
             statsDiv.innerHTML = `
-                <div class="stat"><div class="stat-number">${totalNews}</div><div class="stat-label">News Items</div></div>
-                <div class="stat"><div class="stat-number">${uniqueCount}</div><div class="stat-label">Unique</div></div>
-                <div class="stat"><div class="stat-number">${duplicateCount}</div><div class="stat-label">Duplicates</div></div>
-                <div class="stat"><div class="stat-number">${sources}</div><div class="stat-label">Sources</div></div>
+                <div class="stat"><div class="stat-number">${stats.emailsFetched || '?'}</div><div class="stat-label">Emails Fetched</div></div>
+                <div class="stat"><div class="stat-number">${stats.storiesExtracted || '?'}</div><div class="stat-label">Stories Found</div></div>
+                <div class="stat"><div class="stat-number">${mergedCount}</div><div class="stat-label">Merged</div></div>
+                <div class="stat"><div class="stat-number">${news.length}</div><div class="stat-label">Final Stories</div></div>
             `;
-            if (duplicateGroups.length > 0) {
-                duplicateGroupsDiv.innerHTML = `
-                    <h2 style="margin-bottom: 12px; color: #ff9800; font-size: 1rem;">⚠️ Duplicate Stories</h2>
-                    ${duplicateGroups.map(group => `
-                        <div class="duplicate-group">
-                            <h3>${(group.topic || '').substring(0, 60)}...</h3>
-                            <p>${group.items.length} sources</p>
-                        </div>
-                    `).join('')}
-                `;
-            } else { duplicateGroupsDiv.innerHTML = ''; }
+            
+            // Hide duplicate groups section - we now merge instead
+            duplicateGroupsDiv.innerHTML = '';
             
             newsGrid.innerHTML = news.map((item, idx) => {
                 const title = item.subject || item.title || 'Untitled';
-                const emailUrl = item.emailUrl || item.url || item.link;
-                const titleHtml = emailUrl 
-                    ? `<a href="${emailUrl}" target="_blank" rel="noopener">${title}</a>`
-                    : title;
-                const emailLinkHtml = emailUrl
-                    ? `<a href="${emailUrl}" target="_blank" rel="noopener">📧 Open Email</a>`
+                const sources = item.sources || [item.source || item.sender || 'Unknown'];
+                const emailUrls = item.emailUrls || (item.emailUrl ? [item.emailUrl] : []);
+                const isMerged = sources.length > 1;
+                
+                // Create source badges
+                const sourceBadges = sources.map(s => 
+                    `<span class="news-source">${s}</span>`
+                ).join(' ');
+                
+                // Create email links
+                const emailLinksHtml = emailUrls.length > 0 
+                    ? emailUrls.map((url, i) => 
+                        `<a href="${url}" target="_blank" rel="noopener">📧 ${sources[i] || 'Source ' + (i+1)}</a>`
+                      ).join(' · ')
                     : '';
                     
                 return `
-                    <div class="news-card ${item.isDuplicate ? 'duplicate' : ''}" data-duplicate="${item.isDuplicate || false}">
-                        <span class="news-source">${item.source || item.sender || 'News'}</span>
-                        ${item.isDuplicate ? '<span class="duplicate-badge">DUP</span>' : ''}
-                        <h3 class="news-title">${titleHtml}</h3>
-                        <p class="news-meta">📅 ${formatDate(item.date)} ${emailLinkHtml}</p>
+                    <div class="news-card ${isMerged ? 'merged' : ''}" data-merged="${isMerged}">
+                        <div class="source-badges">${sourceBadges}</div>
+                        ${isMerged ? '<span class="merged-badge">MERGED</span>' : ''}
+                        <h3 class="news-title">${title}</h3>
+                        <p class="news-meta">📅 ${formatDate(item.date)}</p>
                         <p class="news-summary">${item.summary || ''}</p>
+                        ${emailLinksHtml ? `<p class="news-links">${emailLinksHtml}</p>` : ''}
                     </div>
                 `;
             }).join('');
