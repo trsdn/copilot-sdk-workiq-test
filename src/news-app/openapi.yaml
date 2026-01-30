@@ -1,0 +1,359 @@
+openapi: 3.0.3
+info:
+  title: News Aggregator API
+  description: |
+    API for aggregating and summarizing newsletter emails from Microsoft 365 using GitHub Copilot SDK with Work IQ MCP integration.
+
+    ## Features
+    - Real-time streaming news aggregation via SSE
+    - Email fetching from Inbox/news folder
+    - Story extraction and deduplication
+    - Topic-based summarization
+
+    ## Rate Limits
+    - `/api/news-stream`: 5 requests/minute
+    - `/api/news`: 10 requests/minute
+    - `/api/summarize-topic`: 10 requests/minute
+  version: 1.0.0
+  contact:
+    name: GitHub Copilot SDK Examples
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+
+tags:
+  - name: News
+    description: News aggregation endpoints
+  - name: Health
+    description: Health check endpoints
+
+paths:
+  /api/health:
+    get:
+      tags:
+        - Health
+      summary: Health check endpoint
+      description: Returns basic health status, version, and uptime
+      operationId: getHealth
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              example:
+                status: healthy
+                version: "1.0.0"
+                uptime: 12345
+                timestamp: "2026-01-30T12:00:00.000Z"
+
+  /api/ready:
+    get:
+      tags:
+        - Health
+      summary: Readiness check endpoint
+      description: Checks if the service and its dependencies are ready to serve requests
+      operationId: getReady
+      responses:
+        "200":
+          description: Service is ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadyResponse"
+              example:
+                status: ready
+                copilotClient: connected
+                circuitBreaker: closed
+        "503":
+          description: Service is not ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadyResponse"
+              example:
+                status: degraded
+                message: Work IQ circuit breaker is open
+                copilotClient: connected
+                circuitBreaker: open
+
+  /api/news-stream:
+    get:
+      tags:
+        - News
+      summary: Stream news aggregation (SSE)
+      description: |
+        Fetches emails from Inbox/news folder, extracts stories, merges duplicates, 
+        and streams progress updates via Server-Sent Events (SSE).
+      operationId: getNewsStream
+      parameters:
+        - name: days
+          in: query
+          description: Number of days to look back for emails
+          required: false
+          schema:
+            type: integer
+            default: 3
+            minimum: 1
+            maximum: 30
+        - name: max
+          in: query
+          description: Maximum number of news items to return
+          required: false
+          schema:
+            type: integer
+            default: 50
+            minimum: 5
+            maximum: 100
+      responses:
+        "200":
+          description: SSE stream of news aggregation progress
+          content:
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/SSEEvent"
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/news:
+    get:
+      tags:
+        - News
+      summary: Fetch news (legacy endpoint)
+      description: Fetches and summarizes newsletter emails. Returns all results at once.
+      operationId: getNews
+      responses:
+        "200":
+          description: News data with optional duplicate groups
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewsResponse"
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/summarize-topic:
+    post:
+      tags:
+        - News
+      summary: Summarize a specific topic
+      description: Searches emails for a specific topic and provides a comprehensive summary
+      operationId: summarizeTopic
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SummarizeRequest"
+            example:
+              topic: "AI regulations"
+      responses:
+        "200":
+          description: Topic summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SummarizeResponse"
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - version
+        - uptime
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum: [healthy]
+        version:
+          type: string
+          example: "1.0.0"
+        uptime:
+          type: integer
+          description: Uptime in seconds
+        timestamp:
+          type: string
+          format: date-time
+
+    ReadyResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [ready, degraded, not ready]
+        message:
+          type: string
+        copilotClient:
+          type: string
+          enum: [connected, disconnected]
+        circuitBreaker:
+          type: string
+          enum: [open, closed]
+
+    SSEEvent:
+      type: object
+      description: Server-Sent Event payload
+      properties:
+        type:
+          type: string
+          enum: [status, chunk, complete, error]
+        message:
+          type: string
+        data:
+          $ref: "#/components/schemas/NewsData"
+
+    NewsResponse:
+      type: object
+      properties:
+        news:
+          type: array
+          items:
+            $ref: "#/components/schemas/NewsItem"
+        duplicateGroups:
+          type: array
+          items:
+            $ref: "#/components/schemas/DuplicateGroup"
+        rawResponse:
+          type: string
+          description: Raw AI response if JSON parsing failed
+
+    NewsData:
+      type: object
+      properties:
+        news:
+          type: array
+          items:
+            $ref: "#/components/schemas/MergedNewsItem"
+        stats:
+          $ref: "#/components/schemas/Stats"
+
+    NewsItem:
+      type: object
+      properties:
+        id:
+          type: string
+        subject:
+          type: string
+        sender:
+          type: string
+        date:
+          type: string
+          format: date
+        summary:
+          type: string
+        source:
+          type: string
+        emailUrl:
+          type: string
+          format: uri
+        isDuplicate:
+          type: boolean
+        duplicateOf:
+          type: string
+          nullable: true
+
+    MergedNewsItem:
+      type: object
+      properties:
+        id:
+          type: string
+        subject:
+          type: string
+        date:
+          type: string
+          format: date
+        summary:
+          type: string
+        sources:
+          type: array
+          items:
+            type: string
+        emailUrls:
+          type: array
+          items:
+            type: string
+            format: uri
+
+    DuplicateGroup:
+      type: object
+      properties:
+        topic:
+          type: string
+        items:
+          type: array
+          items:
+            type: string
+
+    Stats:
+      type: object
+      properties:
+        emailsFetched:
+          type: integer
+        storiesExtracted:
+          type: integer
+        afterMerge:
+          type: integer
+        displayed:
+          type: integer
+
+    SummarizeRequest:
+      type: object
+      required:
+        - topic
+      properties:
+        topic:
+          type: string
+          description: Topic to summarize
+          minLength: 1
+          maxLength: 200
+
+    SummarizeResponse:
+      type: object
+      properties:
+        summary:
+          type: string
+          description: Comprehensive summary of the topic
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        details:
+          type: string
