@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![License](https://img.shields.io/github/license/trsdn/copilot-sdk-workiq-test)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 ![Node](https://img.shields.io/badge/node-18%2B-brightgreen)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?logo=typescript)
 
