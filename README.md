@@ -5,7 +5,6 @@
 ![License](https://img.shields.io/github/license/trsdn/copilot-sdk-workiq-test)
 ![Node](https://img.shields.io/badge/node-18%2B-brightgreen)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?logo=typescript)
-![CI](https://github.com/trsdn/copilot-sdk-workiq-test/actions/workflows/ci.yml/badge.svg)
 
 **Examples using the GitHub Copilot SDK with Work IQ MCP integration to access Microsoft 365 data.**
 
