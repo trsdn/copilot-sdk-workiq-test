@@ -706,7 +706,7 @@ RETURN: JSON object only {"subject": "...", "summary": "..."}`,
 }
 
 // API endpoint to fetch and summarize news
-app.get("/api/news", apiLimiter, async (req, res) => {
+app.get("/api/news", apiLimiter, async (_req, res) => {
   try {
     const copilot = await getClient();
 
